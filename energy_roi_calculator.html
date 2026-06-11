@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>省電 ROI 計算機 — 綠達節能</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --surface2: #f1f0ec;
+    --border: #e0ddd6;
+    --text: #1a1a18;
+    --text2: #6b6a65;
+    --text3: #9b9a95;
+    --teal: #1D9E75;
+    --teal-light: #e1f5ee;
+    --teal-dark: #0f6e56;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+    line-height: 1.6;
+  }
+
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .header {
+    margin-bottom: 2rem;
+  }
+
+  .header-eyebrow {
+    font-size: 12px;
+    color: var(--teal-dark);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+
+  .header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .header p {
+    font-size: 14px;
+    color: var(--text2);
+    margin-top: 0.4rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .card-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .market-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .mkt-btn {
+    font-size: 14px;
+    padding: 7px 16px;
+    border-radius: 99px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+
+  .mkt-btn:hover { border-color: var(--teal); color: var(--teal-dark); }
+
+  .mkt-btn.active {
+    background: var(--teal-light);
+    color: var(--teal-dark);
+    border-color: var(--teal);
+    font-weight: 500;
+  }
+
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  .field label {
+    font-size: 13px;
+    color: var(--text2);
+    font-weight: 400;
+  }
+
+  .field input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--surface);
+    transition: border-color 0.15s;
+    outline: none;
+  }
+
+  .field input:focus { border-color: var(--teal); }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+
+  .metric {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+  }
+
+  .metric-label {
+    font-size: 12px;
+    color: var(--text3);
+    margin-bottom: 4px;
+  }
+
+  .metric-value {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .metric-sub {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+
+  .metric.highlight .metric-value { color: var(--teal-dark); }
+
+  .payback-section { margin-top: 0.25rem; }
+
+  .payback-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+
+  .payback-label { font-size: 13px; color: var(--text2); }
+
+  .payback-value {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--teal-dark);
+    letter-spacing: -0.02em;
+  }
+
+  .payback-track {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .payback-fill {
+    height: 100%;
+    background: var(--teal);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  .payback-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 5px;
+  }
+
+  .note {
+    font-size: 12px;
+    color: var(--text3);
+    line-height: 1.7;
+    border-left: 2px solid var(--border);
+    padding-left: 10px;
+    margin-top: 1.25rem;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1.25rem 0;
+  }
+
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 480px) {
+    .header h1 { font-size: 22px; }
+    .metric-value { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="header-eyebrow">綠達節能科技</div>
+    <h1>省電 ROI 計算機</h1>
+    <p>綠達馬達 vs 傳統 AC 感應馬達節電效益試算</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">目標市場</div>
+    <div class="market-row">
+      <button class="mkt-btn active" onclick="setMarket(2.5, this)">台灣</button>
+      <button class="mkt-btn" onclick="setMarket(2.8, this)">越南</button>
+      <button class="mkt-btn" onclick="setMarket(2.2, this)">印尼</button>
+      <button class="mkt-btn" onclick="setMarket(2.6, this)">馬來西亞</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">設備參數</div>
+    <div class="field-grid">
+      <div class="field">
+        <label>台數</label>
+        <input type="number" id="units" value="1" min="1" step="1" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>每日開機時數</label>
+        <input type="number" id="hours" value="24" min="1" max="24" step="0.5" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>電費單價（NT$/度）</label>
+        <input type="number" id="rate" value="2.8" min="0.1" step="0.1" oninput="calc()">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">功耗設定</div>
+    <div class="field-grid">
+      <div class="field">
+        <label>傳統 AC 馬達功耗（W）</label>
+        <input type="number" id="ac-watt" value="1000" min="1" step="10" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>綠達馬達實測功耗（W）</label>
+        <input type="number" id="dc-watt" value="535" min="1" step="10" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>每台售價差（NT$）</label>
+        <input type="number" id="price-diff" value="7000" min="0" step="500" oninput="calc()">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">計算結果</div>
+
+    <div class="results-grid">
+      <div class="metric highlight">
+        <div class="metric-label">全年省電費</div>
+        <div class="metric-value" id="r-money">—</div>
+        <div class="metric-sub">NT$</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">全年省電度數</div>
+        <div class="metric-value" id="r-kwh">—</div>
+        <div class="metric-sub">kWh</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">CO₂ 年減排</div>
+        <div class="metric-value" id="r-co2">—</div>
+        <div class="metric-sub">公噸</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">每台每月省費</div>
+        <div class="metric-value" id="r-perunit">—</div>
+        <div class="metric-sub">NT$</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="payback-section">
+      <div class="payback-header">
+        <span class="payback-label">回本期</span>
+        <span class="payback-value" id="r-payback">—</span>
+      </div>
+      <div class="payback-track">
+        <div class="payback-fill" id="payback-bar"></div>
+      </div>
+      <div class="payback-ticks">
+        <span>0</span><span>12 個月</span><span>24 個月</span>
+      </div>
+    </div>
+
+    <p class="note">計算基準：綠達馬達功耗採成大實測數據 535W · 台電排碳係數 0.502 kg CO₂/度（112年）· 東南亞電費為換算 NT$ 估值，僅供參考</p>
+  </div>
+
+  <div class="footer">綠達節能科技股份有限公司 · 新竹科學園區</div>
+
+</div>
+
+<script>
+const CO2 = 0.502;
+
+function setMarket(rate, btn) {
+  document.querySelectorAll('.mkt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('rate').value = rate;
+  calc();
+}
+
+function calc() {
+  const units     = parseFloat(document.getElementById('units').value) || 0;
+  const hours     = parseFloat(document.getElementById('hours').value) || 0;
+  const rate      = parseFloat(document.getElementById('rate').value) || 0;
+  const acWatt    = parseFloat(document.getElementById('ac-watt').value) || 0;
+  const dcWatt    = parseFloat(document.getElementById('dc-watt').value) || 0;
+  const priceDiff = parseFloat(document.getElementById('price-diff').value) || 0;
+
+  const savedPerHour = (acWatt - dcWatt) / 1000;
+  const annualKwh    = savedPerHour * hours * 365 * units;
+  const annualNTD    = annualKwh * rate;
+  const co2t         = annualKwh * CO2 / 1000;
+  const perUnit      = units > 0 ? annualNTD / units / 12 : 0;
+  const totalInvest  = priceDiff * units;
+  const monthly      = annualNTD / 12;
+  const payback      = (monthly > 0 && totalInvest > 0) ? totalInvest / monthly : null;
+
+  document.getElementById('r-money').textContent   = Math.round(annualNTD).toLocaleString();
+  document.getElementById('r-kwh').textContent     = Math.round(annualKwh).toLocaleString();
+  document.getElementById('r-co2').textContent     = co2t.toFixed(2);
+  document.getElementById('r-perunit').textContent = Math.round(perUnit).toLocaleString();
+  document.getElementById('r-payback').textContent = payback ? payback.toFixed(1) + ' 個月' : '—';
+
+  const pct = payback ? Math.min(payback / 24 * 100, 100) : 0;
+  document.getElementById('payback-bar').style.width = Math.round(pct) + '%';
+}
+
+calc();
+</script>
+</body>
+</html>
